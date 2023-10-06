@@ -1,0 +1,11 @@
+node_modules/
+dist/
+
+.env*
+docker-compose.exalton.yml
+
+# asdf
+.tool-versions
+
+.settings.json
+package-lock.json
