@@ -7,7 +7,7 @@ import {
   BullQueueConfig,
   BullWorkerConfig,
 } from "../services/bull";
-import { Credential as GTWCredential, Gateway } from "../services/protocol";
+import { PDA, Gateway } from "../services/protocol";
 
 const gt = new Gateway();
 gt.jwt = process.env.PROTOCOL_API_JWT;
@@ -133,7 +133,7 @@ const IssueProtocolDataWorker = new Worker<IssueProtocolData>(
 
     job.updateProgress(66);
 
-    const cred = await gt.issueCredential({
+    const cred = await gt.issuePDA({
       recipient,
       title,
       description,
@@ -248,7 +248,7 @@ const CreateOrUpdateLoyaltyPassWorker =
               ).title,
             })}`
           );
-          await gt.updateCredential({
+          await gt.updatePDA({
             id: lp.id,
             claim: {
               ...lp.claim,
@@ -296,7 +296,7 @@ const CreateOrUpdateLoyaltyPassWorker =
           })}`
         );
 
-        await gt.issueCredential({
+        await gt.issuePDA({
           recipient: wallet,
           title: "LI.FI Loyalty Pass",
           description: `LI.FI Loyalty Pass is a user-owned and operated consumer recognition method. Using the Loyalty Pass, LI.FI issues private data assets for on-chain activity via Jumper Exchange, interacting with community campaigns, and other engagement across LI.FI powered products.This loyalty pass can be used in the future for unique experiences and benefits across the LI.FI ecosystem`,
