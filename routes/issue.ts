@@ -368,7 +368,7 @@ router.post("/lifi-lp", async (req, res) => {
 
   const promises = LoyaltyPasses.map(async ({ wallet: recipient }) => {
     CreateOrUpdateLoyaltyPassQueue.add("create_or_update-loyalty-pass", {
-      recipient: ethers.utils.getAddress(recipient),
+      recipient: ethers.getAddress(recipient),
     });
   });
   await Promise.all(promises);
@@ -387,7 +387,7 @@ router.post("/lifi-pda", async (req, res) => {
   const promises = pdas.map(async (pda) => {
     await dispatchWalletHandler({
       ...pda,
-      wallet: ethers.utils.getAddress(pda.wallet),
+      wallet: ethers.getAddress(pda.wallet),
     });
 
     // add 5 second backoff
