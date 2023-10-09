@@ -12,7 +12,7 @@ export type Credential = {
   };
 };
 
-class Gateway {
+export class Gateway {
   wallet: ethers.Wallet | null = null;
   url: string = process.env.PROTOCOL_GRAPHQL_URL as string;
   jwt: string | null = null;
