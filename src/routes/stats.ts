@@ -10,9 +10,12 @@ router.post("/wallet", (req, res, _next) => {
   const analyticsFp =
     (req.headers.input as string) ||
     path.join(`${__dirname}`, "..", "..", "data", "input.json");
+  console.log(`LI.FI Wallet Analytics Filepath: ${analyticsFp}`);
+
   const outputFp =
     (req.headers.output as string) ||
     path.join(`${__dirname}`, "..", "..", "data", "output.json");
+  console.log(`Output Filepath: ${outputFp}`);
 
   const month = req.headers.month;
   if (!month) {
