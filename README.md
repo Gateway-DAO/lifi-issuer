@@ -16,13 +16,13 @@
 > Enqueues Credential metadata to be issued by the `issue-credential` BullMQ Queue.
 
 **Headers**:
-- __credential__: JSON list of GatewayMetrics for wallets (e.g. `./data/output.json`)
+- __credential__: Filepath to JSON list of GatewayMetrics for wallets (e.g. `./data/output.json`)
 
 ### POST /issue/loyalty-pass
 > Enqueues list of wallets to be created or updated by the `create_or_update_loyalty_pass` BullMQ Queue.
 
 **Headers**:
-- __loyalty-pass__: JSON list of wallets
+- __loyalty-pass__: Filepath to JSON list of wallets
 
 
 ## Getting Started
@@ -76,7 +76,7 @@
 	pnmp start
 	```
 
-4. Tear Down
+4. (optional) Tear down Redis container
 	```
 	<!-- npm -->
 	npm run redis:stop
