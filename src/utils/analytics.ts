@@ -6,8 +6,22 @@ export type GatewayMetrics = {
   totalTransactions: number;
   totalUniqueNetworks: number;
   totalVolume: number;
-  month?: string;
+  month?: Month;
 };
+
+export type Month =
+  | "JAN"
+  | "FEB"
+  | "MAR"
+  | "APR"
+  | "MAY"
+  | "JUN"
+  | "JUL"
+  | "AUG"
+  | "SEP"
+  | "OCT"
+  | "NOV"
+  | "DEC";
 
 /**
  * LI.FI Wallet Analytics
