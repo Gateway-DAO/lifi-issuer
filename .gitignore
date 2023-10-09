@@ -9,3 +9,5 @@ docker-compose.exalton.yml
 
 .settings.json
 package-lock.json
+
+*.DS_Store
