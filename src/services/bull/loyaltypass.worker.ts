@@ -1,21 +1,21 @@
-import { Worker } from "bullmq";
+import { Job, Worker } from "bullmq";
 import {
   LOYALTY_DM_ID,
   LOYALTY_PASS_TIERS,
   ORG_ID,
   TIER_DATA,
-} from "src/utils/tiers";
-import gt from "../../services/protocol";
+} from "../../utils/tiers";
+import { Gateway } from "../../services/protocol";
 import { defaultWorkerOpts } from "./config";
-import CredentialQueueData from "./credential.data";
+import LoyaltyPassQueueData from "./loyaltypass.data";
 
-const CreateOrUpdateLoyaltyPassWorker = new Worker<CredentialQueueData>(
-  "create_or_update-loyalty_pass",
-  async (job) => {
-    const childrenValues = await job.getChildrenValues();
+const gt = new Gateway();
 
+const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
+  "loyalty-pass",
+  async (job: Job) => {
     // Find protocol::User for wallet
-    const wallet = (Object.values(childrenValues)[0] || job.data).recipient;
+    const wallet = job.data.wallet;
 
     const wallet_userId = (await gt.getUserByWallet(wallet))?.id;
     job.log(`[wallet ${wallet}] walletUser: ${wallet_userId}`);
@@ -94,7 +94,7 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<CredentialQueueData>(
             ).title,
           })}`
         );
-        await gt.updatePDA({
+        await gt.updateCredential({
           id: lp.id,
           claim: {
             ...lp.claim,
@@ -142,7 +142,7 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<CredentialQueueData>(
         })}`
       );
 
-      await gt.issuePDA({
+      await gt.issueCredential({
         recipient: wallet,
         title: "LI.FI Loyalty Pass",
         description: `LI.FI Loyalty Pass is a user-owned and operated consumer recognition method. Using the Loyalty Pass, LI.FI issues private data assets for on-chain activity via Jumper Exchange, interacting with community campaigns, and other engagement across LI.FI powered products.This loyalty pass can be used in the future for unique experiences and benefits across the LI.FI ecosystem`,
@@ -181,7 +181,6 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<CredentialQueueData>(
   },
   {
     ...defaultWorkerOpts,
-    autorun: true,
   }
 );
 

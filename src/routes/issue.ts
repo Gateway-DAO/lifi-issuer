@@ -13,6 +13,7 @@ import {
   computeTier,
   formatTier,
 } from "../utils/tiers";
+import CreateOrUpdateLoyaltyPassWorker from "../services/bull/loyaltypass.worker";
 
 const router = Router();
 
@@ -26,7 +27,7 @@ router.post("/loyalty-pass", async (req, res) => {
 
   const promises = LoyaltyPasses.map(async ({ wallet: recipient }) => {
     CreateOrUpdateLoyaltyPassQueue.add("create_or_update-loyalty-pass", {
-      recipient: ethers.getAddress(recipient),
+      wallet: ethers.getAddress(recipient),
     });
   });
   await Promise.all(promises);
@@ -71,10 +72,8 @@ router.get("/credential", (req, res, next) => {
 });
 
 async function dispatchWalletHandler(pda: GatewayMetrics) {
-  await Promise.all([
-    CredentialQueueWorker.waitUntilReady(),
-    CreateOrUpdateLoyaltyPassQueue.waitUntilReady(),
-  ]);
+  await CredentialQueueWorker.waitUntilReady();
+  await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
 
   // Volume PDA
   const volumeTier = computeTier("volume", pda.totalVolume);
@@ -185,6 +184,14 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
   }
 
   UpdateLoyaltyPassFlowProducer.add({
+    name: `${pda.wallet}`,
+    queueName: "loyalty-pass",
+    data: {
+      wallet: pda.wallet,
+    },
+    children: [volumeJob, networkJob, transactionsJob].filter(
+      (job) => job != undefined
+    ),
     opts: {
       jobId: `loyaltypass-${pda.wallet}`,
       attempts: parseInt(process.env.BULLMQ_RETRY) || 5,
@@ -193,11 +200,6 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
         delay: parseInt(process.env.BULLMQ_BACKOFF) || 500,
       },
     },
-    name: `${pda.wallet}::create_or_update-loyalty_pass`,
-    queueName: "create_or_update-loyalty_pass",
-    children: [volumeJob, networkJob, transactionsJob].filter(
-      (job) => job != undefined
-    ),
   });
 }
 

@@ -1,6 +1,6 @@
 import { Job, Worker } from "bullmq";
 import { Gateway } from "../protocol";
-import { defaultWorkerOpts } from "./config";
+import { defaultConnectionOpts, defaultWorkerOpts } from "./config";
 import CredentialQueueData from "./credential.data";
 
 const gt = new Gateway();
@@ -43,12 +43,6 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
         )}`
       );
 
-      console.log(
-        `[wallet ${recipient}] existingCredByDM: ${JSON.stringify(
-          existingCredByDM
-        )}`
-      );
-
       const cred = existingCredByDM.find(
         (cred) => cred.title === title && cred.dataModel.id === dataModelId
       );
@@ -69,7 +63,7 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
 
       job.log(`Wallet ${recipient} has no associated duplicates`);
     } else {
-      job.log(`Wallet ${recipient} is not associated with a user`);
+      job.log(`Wallet ${recipient} has no associated duplicates`);
     }
 
     job.updateProgress(66);
@@ -94,6 +88,7 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
   },
   {
     ...defaultWorkerOpts,
+    autorun: true,
   }
 );
 

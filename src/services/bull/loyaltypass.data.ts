@@ -1,5 +1,5 @@
 type LoyaltyPassQueueData = {
-  recipient: string;
+  wallet: string;
 };
 
 export default LoyaltyPassQueueData;
