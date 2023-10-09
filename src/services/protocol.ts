@@ -15,7 +15,7 @@ export type Credential = {
 export class Gateway {
   wallet: ethers.Wallet | null = null;
   url: string = process.env.PROTOCOL_GRAPHQL_URL as string;
-  jwt: string | null = null;
+  jwt: string | null = process.env.PROTOCOL_API_JWT as string;
 
   api: AxiosInstance = axios.create({
     method: "post",
@@ -503,7 +503,7 @@ export class Gateway {
 
       if (res.data.errors) throw new Error(JSON.stringify(res.data.errors));
 
-      return res.data.data?.earnedCredentialsByIdByDataModel;
+      return res.data.data?.earnedCredentialsByIdByDataModels;
     } catch (err) {
       console.log(err?.response?.data?.errors || err);
       throw new Error("Failed to get credentials");
