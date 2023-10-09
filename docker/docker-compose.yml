@@ -1,0 +1,12 @@
+networks:
+  gateway-protocol:
+    name: gateway/protocol
+
+services:
+  redis:
+    container_name: gateway-redis
+    image: redis
+    ports:
+      - 6379:6379
+    networks:
+      - gateway-protocol
