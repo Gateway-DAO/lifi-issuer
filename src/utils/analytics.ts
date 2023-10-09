@@ -9,20 +9,6 @@ export type GatewayMetrics = {
   month?: Month;
 };
 
-export type Month =
-  | "JAN"
-  | "FEB"
-  | "MAR"
-  | "APR"
-  | "MAY"
-  | "JUN"
-  | "JUL"
-  | "AUG"
-  | "SEP"
-  | "OCT"
-  | "NOV"
-  | "DEC";
-
 /**
  * LI.FI Wallet Analytics
  */
@@ -42,3 +28,21 @@ export type WalletTransaction = {
 
 // Transaction Status
 export type WalletTransactionStatus = "COMPLETED" | "PENDING";
+
+/**
+ * Miscelleneous
+ */
+export enum Month {
+  JAN = 'JAN',
+  FEB = 'FEB',
+  MAR = 'MAR',
+  APR = 'APR',
+  MAY = 'MAY',
+  JUN = 'JUN',
+  JUL = 'JUL',
+  AUG = 'AUG',
+  SEP = 'SEP',
+  OCT = 'OCT',
+  NOV = 'NOV',
+  DEC = 'DEC',
+}

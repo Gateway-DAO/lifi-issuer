@@ -1,7 +1,8 @@
-import { GatewayMetrics, WalletAnalytics } from "./analytics";
+import { GatewayMetrics, Month, WalletAnalytics } from "./analytics";
 
 export const computeWalletMetrics = (
-  walletStats: WalletAnalytics
+  walletStats: WalletAnalytics,
+  month?: Month
 ): GatewayMetrics => {
   const wallet = walletStats.walletAddress;
 
@@ -52,6 +53,7 @@ export const computeWalletMetrics = (
 
   return {
     wallet,
+    month,
     totalTransactions,
     totalUniqueNetworks: uniqueChains.size,
     totalVolume,
