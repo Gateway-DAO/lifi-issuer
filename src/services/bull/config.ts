@@ -1,20 +1,23 @@
 import { QueueOptions, WorkerOptions } from "bullmq";
+import dotenv from "dotenv";
 
-export const BullConnectionConfig = {
+dotenv.config();
+
+export const defaultConnectionOpts = {
   connection: {
     host: process.env.REDIS_HOST,
     port: parseInt(process.env.REDIS_PORT),
   },
 };
 
-export const BullWorkerConfig: WorkerOptions = {
-  ...BullConnectionConfig,
+export const defaultWorkerOpts: WorkerOptions = {
+  ...defaultConnectionOpts,
   concurrency: parseInt(process.env.BULLMQ_CONCURRENCY) || 1,
   lockDuration: 5 * 60 * 1000,
 };
 
-export const BullQueueConfig: QueueOptions = {
-  ...BullConnectionConfig,
+export const defaultQueueOpts: QueueOptions = {
+  ...defaultConnectionOpts,
   defaultJobOptions: {
     attempts: parseInt(process.env.BULLMQ_RETRY) || 5,
     stackTraceLimit: 500,

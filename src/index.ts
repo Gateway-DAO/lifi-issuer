@@ -1,11 +1,8 @@
-import { createBullBoard } from "@bull-board/api";
-import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
-import { ExpressAdapter } from "@bull-board/express";
 import dotenv from "dotenv";
 import express, { Application, Request, Response } from "express";
-import { CreateOrUpdateLoyaltyPassQueue } from "./routes/issue-clone";
+import bullRouter from "./routes/bull";
+import issueRouter from "./routes/issue";
 import statsRouter from "./routes/stats";
-import CredentialQueue from "./services/bull/credential.queue";
 
 /**
  * Express Router
@@ -33,17 +30,8 @@ app.use("/stats", statsRouter);
  *
  * BullMQ Dashboard
  */
-const bullmqAdapter = new ExpressAdapter();
-bullmqAdapter.setBasePath("/bull");
-createBullBoard({
-  queues: [
-    new BullMQAdapter(CredentialQueue),
-    new BullMQAdapter(CreateOrUpdateLoyaltyPassQueue),
-  ],
-  serverAdapter: bullmqAdapter,
-});
-
-app.use("/bull", bullmqAdapter.getRouter());
+app.use("/bull", bullRouter);
+app.use("/issue", issueRouter);
 
 /*
  * Start Express Server

@@ -506,4 +506,4 @@ export class Gateway {
   }
 }
 
-export default Gateway;
+export default new Gateway();

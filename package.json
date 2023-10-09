@@ -4,13 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "jest",
     "build": "npx tsc",
     "start": "ts-node src/index.ts",
-    "dev": "docker/start.sh && nodemon src/index.ts",
+    "dev": "nodemon src/index.ts",
     "redis": "docker compose -f ./docker/docker-compose.yml up -d redis",
-    "redis:stop": "docker compose -f ./docker/docker-compose.yml down redis",
-    "redis:stop:v": "docker compose -f ./docker/docker-compose.yml down -v redis",
-    "test": "jest"
+    "redis:stop": "docker compose -f ./docker/docker-compose.yml down redis"
   },
   "keywords": [],
   "author": "",
