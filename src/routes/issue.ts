@@ -41,7 +41,16 @@ router.post("/credential", async (req, res) => {
     res.status(400).send("Missing PDA file as header");
   }
 
-  const pdas: GatewayMetrics[] = require(pda as string);
+  let pdas: GatewayMetrics[] = [];
+
+  try {
+    pdas = require(pda as string);
+  } catch (err) {
+    return res.status(400).send({
+      error: "Invalid PDA file",
+    });
+  }
+
   const promises = pdas.map(async (pda) => {
     await dispatchWalletHandler({
       ...pda,
@@ -79,7 +88,7 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
 
     volumeJob = {
       name: `${pda.wallet}-${pda.month}-volume`,
-      queueName: "issue-protocol",
+      queueName: "issue-credential",
       data: {
         recipient: pda.wallet,
         title: `${METRICS_TRANSLATED["volume"]} - ${
@@ -117,7 +126,7 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
 
     networkJob = {
       name: `${pda.wallet}-${pda.month}-network`,
-      queueName: "issue-protocol",
+      queueName: "issue-credential",
       data: {
         recipient: pda.wallet,
         title: `${METRICS_TRANSLATED["networks"]} - ${
@@ -152,7 +161,7 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
 
     transactionsJob = {
       name: `${pda.wallet}-${pda.month}-txn`,
-      queueName: "issue-protocol",
+      queueName: "issue-credential",
       data: {
         recipient: pda.wallet,
         title: `${METRICS_TRANSLATED["transactions"]} - ${
