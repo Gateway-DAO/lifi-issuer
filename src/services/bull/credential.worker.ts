@@ -1,7 +1,9 @@
 import { Job, Worker } from "bullmq";
-import gt from "../protocol";
+import { Gateway } from "../protocol";
 import { defaultWorkerOpts } from "./config";
 import CredentialQueueData from "./credential.data";
+
+const gt = new Gateway();
 
 const CredentialQueueWorker = new Worker<CredentialQueueData>(
   "issue-credential",
@@ -72,7 +74,7 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
 
     job.updateProgress(66);
 
-    const cred = await gt.issuePDA({
+    const cred = await gt.issueCredential({
       recipient,
       title,
       description,
