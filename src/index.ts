@@ -41,6 +41,7 @@ const port = process.env.PORT || 8000;
 app.listen(port, () => {
   console.log(
     `🟢\tBullMQ: \thttp://localhost:${port}/bull\n` +
+      `\tWallet Stats:\thttp://localhost:${port}/stats/wallet\n` +
       `\tdefault: \thttp://localhost:${port}`
   );
 });
