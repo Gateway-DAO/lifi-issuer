@@ -37,22 +37,22 @@ router.post("/loyalty-pass", async (req, res) => {
 
 router.post("/credential", async (req, res) => {
   // collect loyaltypass and pda filepaths from the request header
-  const { loyaltypass, pda } = req.headers;
-  if (!pda) {
-    res.status(400).send("Missing PDA file as header");
+  const { credential } = req.headers;
+  if (!credential) {
+    res.status(400).send("Missing credential file as header");
   }
 
-  let pdas: GatewayMetrics[] = [];
+  let credentials: GatewayMetrics[] = [];
 
   try {
-    pdas = require(pda as string);
+    credentials = require(credential as string);
   } catch (err) {
     return res.status(400).send({
       error: "Invalid PDA file",
     });
   }
 
-  const promises = pdas.map(async (pda) => {
+  const promises = credentials.map(async (pda) => {
     await dispatchWalletHandler({
       ...pda,
       wallet: ethers.getAddress(pda.wallet),
@@ -63,42 +63,40 @@ router.post("/credential", async (req, res) => {
   });
   await Promise.all(promises);
 
-  res.status(200).send(pdas);
+  res.status(200).send(credentials);
 });
 
-router.get("/credential", (req, res, next) => {
-  console.log("SUCCESS!");
-  res.status(200).send({ msg: "healthy" });
-});
-
-async function dispatchWalletHandler(pda: GatewayMetrics) {
+async function dispatchWalletHandler(credentialMetrics: GatewayMetrics) {
   await CredentialQueueWorker.waitUntilReady();
   await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
 
   // Volume PDA
-  const volumeTier = computeTier("volume", pda.totalVolume);
+  const volumeTier = computeTier("volume", credentialMetrics.totalVolume);
   let volumePoints = 0;
   let volumeJob = undefined;
   if (volumeTier != undefined) {
     console.log(
-      `[wallet ${pda.wallet}::month ${pda.month}] volumeTier: ${volumeTier}`
+      `[wallet ${credentialMetrics.wallet}::month ${credentialMetrics.month}] volumeTier: ${volumeTier}`
     );
     volumePoints = computePoints("volume", volumeTier);
 
     volumeJob = {
-      name: `${pda.wallet}-${pda.month}-volume`,
+      name: `${credentialMetrics.wallet}-${credentialMetrics.month}-volume`,
       queueName: "issue-credential",
       data: {
-        recipient: pda.wallet,
+        recipient: credentialMetrics.wallet,
         title: `${METRICS_TRANSLATED["volume"]} - ${
-          MONTHS_TRANSLATED[pda.month]
+          MONTHS_TRANSLATED[credentialMetrics.month]
         }`,
         description: DESCRIPTION_TRANSLATED["volume"],
         claim: {
-          volume: Number(pda.totalVolume).toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD",
-          }),
+          volume: Number(credentialMetrics.totalVolume).toLocaleString(
+            "en-US",
+            {
+              style: "currency",
+              currency: "USD",
+            }
+          ),
           tier: formatTier(volumeTier),
           points: volumePoints,
         },
@@ -108,32 +106,35 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
         tags: ["DeFi", "Bridging"],
       },
       opts: {
-        jobId: `issue-volume-${pda.month}-${pda.wallet}`,
+        jobId: `issue-volume-${credentialMetrics.month}-${credentialMetrics.wallet}`,
       },
     };
   }
 
   // Network PDA
-  const networkTier = computeTier("networks", pda.totalUniqueNetworks);
+  const networkTier = computeTier(
+    "networks",
+    credentialMetrics.totalUniqueNetworks
+  );
   let networkPoints = 0;
   let networkJob = undefined;
   if (networkTier != undefined) {
     console.log(
-      `[wallet ${pda.wallet}::month ${pda.month}] networkTier: ${networkTier}`
+      `[wallet ${credentialMetrics.wallet}::month ${credentialMetrics.month}] networkTier: ${networkTier}`
     );
     networkPoints = computePoints("networks", networkTier);
 
     networkJob = {
-      name: `${pda.wallet}-${pda.month}-network`,
+      name: `${credentialMetrics.wallet}-${credentialMetrics.month}-network`,
       queueName: "issue-credential",
       data: {
-        recipient: pda.wallet,
+        recipient: credentialMetrics.wallet,
         title: `${METRICS_TRANSLATED["networks"]} - ${
-          MONTHS_TRANSLATED[pda.month]
+          MONTHS_TRANSLATED[credentialMetrics.month]
         }`,
         description: DESCRIPTION_TRANSLATED["networks"],
         claim: {
-          chains: pda.totalUniqueNetworks,
+          chains: credentialMetrics.totalUniqueNetworks,
           tier: formatTier(networkTier),
           points: networkPoints,
         },
@@ -143,32 +144,35 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
         tags: ["DeFi", "Bridging"],
       },
       opts: {
-        jobId: `issue-network-${pda.month}-${pda.wallet}`,
+        jobId: `issue-network-${credentialMetrics.month}-${credentialMetrics.wallet}`,
       },
     };
   }
 
   // Transaction PDA
-  const transactionsTier = computeTier("transactions", pda.totalTransactions);
+  const transactionsTier = computeTier(
+    "transactions",
+    credentialMetrics.totalTransactions
+  );
   let transactionsPoints = 0;
   let transactionsJob = undefined;
   if (transactionsTier != undefined) {
     console.log(
-      `[wallet ${pda.wallet}::month ${pda.month}] transactionsTier: ${transactionsTier}`
+      `[wallet ${credentialMetrics.wallet}::month ${credentialMetrics.month}] transactionsTier: ${transactionsTier}`
     );
     transactionsPoints = computePoints("transactions", transactionsTier);
 
     transactionsJob = {
-      name: `${pda.wallet}-${pda.month}-txn`,
+      name: `${credentialMetrics.wallet}-${credentialMetrics.month}-txn`,
       queueName: "issue-credential",
       data: {
-        recipient: pda.wallet,
+        recipient: credentialMetrics.wallet,
         title: `${METRICS_TRANSLATED["transactions"]} - ${
-          MONTHS_TRANSLATED[pda.month]
+          MONTHS_TRANSLATED[credentialMetrics.month]
         }`,
         description: DESCRIPTION_TRANSLATED["transactions"],
         claim: {
-          transactions: pda.totalTransactions,
+          transactions: credentialMetrics.totalTransactions,
           tier: formatTier(transactionsTier),
           points: transactionsPoints,
         },
@@ -178,22 +182,22 @@ async function dispatchWalletHandler(pda: GatewayMetrics) {
         tags: ["DeFi", "Bridging"],
       },
       opts: {
-        jobId: `issue-txn-${pda.month}-${pda.wallet}`,
+        jobId: `issue-txn-${credentialMetrics.month}-${credentialMetrics.wallet}`,
       },
     };
   }
 
   UpdateLoyaltyPassFlowProducer.add({
-    name: `${pda.wallet}`,
+    name: `${credentialMetrics.wallet}`,
     queueName: "loyalty-pass",
     data: {
-      wallet: pda.wallet,
+      wallet: credentialMetrics.wallet,
     },
     children: [volumeJob, networkJob, transactionsJob].filter(
       (job) => job != undefined
     ),
     opts: {
-      jobId: `loyaltypass-${pda.wallet}`,
+      jobId: `loyaltypass-${credentialMetrics.wallet}`,
       attempts: parseInt(process.env.BULLMQ_RETRY) || 5,
       backoff: {
         type: "exponential",
