@@ -46,10 +46,11 @@ app.listen(port, () => {
   );
 
   console.log(
-    `\n\n` +
+    `\n\n(check README)\n` +
       `▶️  Issue Credentials:\n` +
       `\t1. Load DB Dump in data/input.json\n` +
       `\t2. Execute following command in new shell\n` +
-      `\t\tcurl - X POST http://localhost:8000/issue/credential`
+      `\t\tcurl -X POST http://localhost:8000/issue/credential \\ \n` +
+      `\t\t\t-H 'credential: <path-to-db_dump>'\n`
   );
 });
