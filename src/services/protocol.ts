@@ -1,6 +1,9 @@
 import axios, { AxiosInstance } from "axios";
 import { ethers } from "ethers";
 
+import dotenv from "dotenv";
+dotenv.config();
+
 export type Credential = {
   id: string;
   title: string;
