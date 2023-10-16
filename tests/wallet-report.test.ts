@@ -2,8 +2,8 @@ import {
   GatewayMetrics,
   WalletAnalytics,
   WalletTransaction,
-} from "../../src/utils/analytics";
-import { computeWalletMetrics } from "../../src/utils/wallet-report";
+} from "../src/utils/analytics";
+import { computeWalletMetrics } from "../src/utils/wallet-report";
 
 describe("wallet-report", () => {
   const walletAddress = "0x0000000000000000000000000000000000000000";

@@ -1,9 +1,11 @@
 import { ethers } from "ethers";
 import { Router } from "express";
-import CredentialQueueWorker from "../services/bull/credential.worker";
-import UpdateLoyaltyPassFlowProducer from "../services/bull/flow";
-import CreateOrUpdateLoyaltyPassQueue from "../services/bull/loyaltypass.queue";
-import { GatewayMetrics } from "../utils/analytics";
+import {
+  CreateOrUpdateLoyaltyPassQueue,
+  CreateOrUpdateLoyaltyPassWorker,
+  CredentialQueueWorker,
+  UpdateLoyaltyPassFlowProducer,
+} from "../services/bull";
 import {
   DESCRIPTION_TRANSLATED,
   METRICS_TRANSLATED,
@@ -13,7 +15,11 @@ import {
   computeTier,
   formatTier,
 } from "../utils/tiers";
-import CreateOrUpdateLoyaltyPassWorker from "../services/bull/loyaltypass.worker";
+import {
+  GatewayMetrics,
+  LifiWalletReport,
+  parseLifiData,
+} from "../utils/types";
 
 const router = Router();
 
@@ -42,7 +48,7 @@ router.post("/credential", async (req, res) => {
     res.status(400).send("Missing credential file as header");
   }
 
-  let credentials: GatewayMetrics[] = [];
+  let credentials: LifiWalletReport[] = [];
 
   try {
     credentials = require(credential as string);
@@ -52,11 +58,8 @@ router.post("/credential", async (req, res) => {
     });
   }
 
-  const promises = credentials.map(async (pda) => {
-    await dispatchWalletHandler({
-      ...pda,
-      wallet: ethers.getAddress(pda.wallet),
-    });
+  const promises = credentials.map(async (lifiData) => {
+    await dispatchWalletHandler(parseLifiData(lifiData));
 
     // add 5 second backoff
     await new Promise((resolve) => setTimeout(resolve, 5000));
