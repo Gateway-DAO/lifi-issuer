@@ -1,3 +1,5 @@
+import { Month } from "./types";
+
 export const computeTier = (
   metric: keyof typeof METRICS_TRANSLATED,
   value: number
@@ -169,18 +171,18 @@ export const METRICS_TRANSLATED = {
 };
 
 export const MONTHS_TRANSLATED = {
-  JAN: "January",
-  FEB: "February",
-  MAR: "March",
-  APR: "April",
-  MAY: "May",
-  JUN: "June",
-  JUL: "July",
-  AUG: "August",
-  SEP: "September",
-  OCT: "October",
-  NOV: "November",
-  DEC: "December",
+  [Month.JAN]: "January",
+  [Month.FEB]: "February",
+  [Month.MAR]: "March",
+  [Month.APR]: "April",
+  [Month.MAY]: "May",
+  [Month.JUN]: "June",
+  [Month.JUL]: "July",
+  [Month.AUG]: "August",
+  [Month.SEP]: "September",
+  [Month.OCT]: "October",
+  [Month.NOV]: "November",
+  [Month.DEC]: "December",
 };
 
 export const DESCRIPTION_TRANSLATED = {
