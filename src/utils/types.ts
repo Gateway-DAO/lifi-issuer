@@ -4,6 +4,7 @@ import { ethers } from "ethers";
  * LI.FI Exported Wallet Metadata
  */
 export type LifiWalletReport = {
+  _id: string;
   fromAddress: string;
   bucket: string;
   sumTransferUsd: number;
