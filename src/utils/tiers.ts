@@ -106,28 +106,28 @@ export const TIER_METRIC_LIMITS = {
   },
   power_user: {
     volume: 1000,
-    transactions: 10,
-    networks: 5,
+    transactions: 5,
+    networks: 2,
   },
   chad: {
     volume: 10000,
-    transactions: 50,
-    networks: 10,
+    transactions: 11,
+    networks: 3,
   },
   ape: {
     volume: 50000,
-    transactions: 250,
-    networks: 14,
+    transactions: 21,
+    networks: 5,
   },
   degen: {
-    volume: 250000,
-    transactions: 500,
-    networks: 17,
+    volume: 100_000,
+    transactions: 36,
+    networks: 7,
   },
   grand_degen: {
-    volume: 1000000,
-    transactions: 1000,
-    networks: 20,
+    volume: 500_000,
+    transactions: 50,
+    networks: 8,
   },
 };
 
