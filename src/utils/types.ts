@@ -27,7 +27,7 @@ export function parseLifiData(lifiData: LifiWalletReport): GatewayMetrics {
   return {
     wallet: ethers.getAddress(lifiData.fromAddress),
     month: new Date(lifiData.bucket.split("-")[1])
-      .toLocaleString("default", { month: "short" })
+      .toLocaleString("en-US", { month: "short" })
       .toUpperCase() as Month,
     totalTransactions: lifiData.transfers,
     totalUniqueNetworks: lifiData.chainCount,
