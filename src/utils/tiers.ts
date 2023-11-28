@@ -10,9 +10,24 @@ export const computeTier = (
   return tier;
 };
 
+export const computeLineaTier = (
+  metric: keyof typeof METRICS_TRANSLATED,
+  value: number
+): string => {
+  const tier = sortedLineaTiers.find((tier) => {
+    return value >= LINEA_TIER_METRIC_LIMITS[tier][metric];
+  });
+  return tier;
+};
+
 export const computePoints = (metric: string, tier: string): number => {
   return TIER_DATA[metric]["points"][tier];
 };
+
+export const computeLineaPoints = (metric: string, tier: string): number => {
+  return LINEA_TIER_DATA[metric]["points"][tier];
+};
+
 export const formatTier = (text: string): string => {
   if (text == "baby") return "Novice";
 
@@ -93,6 +108,37 @@ export const TIER_DATA = {
   },
 };
 
+export const LINEA_TIER_DATA = {
+  volume: {
+    points: {
+      voyager: 5.243,
+      traveler: 10.313,
+      explorer: 15.415,
+      adventurer: 20.524,
+      seafarer: 25.641,
+      wanderer: 30.731,
+      pilgrim: 40.824,
+      globetrotter: 50.983,
+      nomad: 75.99,
+      captain: 100.999,
+    },
+  },
+  transactions: {
+    points: {
+      voyager: 2.245,
+      traveler: 5.321,
+      explorer: 8.453,
+      adventurer: 15.548,
+      seafarer: 20.599,
+      wanderer: 25.689,
+      pilgrim: 30.78,
+      globetrotter: 40.898,
+      nomad: 45.911,
+      captain: 50.999,
+    },
+  },
+};
+
 export const TIER_METRIC_LIMITS = {
   none: {
     volume: 0,
@@ -128,6 +174,49 @@ export const TIER_METRIC_LIMITS = {
     volume: 500_000,
     transactions: 50,
     networks: 8,
+  },
+};
+
+export const LINEA_TIER_METRIC_LIMITS = {
+  voyager: {
+    volume: 25,
+    transactions: 1,
+  },
+  traveler: {
+    volume: 51,
+    transactions: 2,
+  },
+  explorer: {
+    volume: 126,
+    transactions: 3,
+  },
+  adventurer: {
+    volume: 251,
+    transactions: 4,
+  },
+  seafarer: {
+    volume: 501,
+    transactions: 6,
+  },
+  wanderer: {
+    volume: 751,
+    transactions: 8,
+  },
+  pilgrim: {
+    volume: 1001,
+    transactions: 10,
+  },
+  globetrotter: {
+    volume: 1501,
+    transactions: 12,
+  },
+  nomad: {
+    volume: 2001,
+    transactions: 14,
+  },
+  captain: {
+    volume: 3000,
+    transactions: 16,
   },
 };
 
@@ -201,4 +290,17 @@ export const sortedTiers = [
   "chad",
   "power_user",
   "baby",
+];
+
+export const sortedLineaTiers = [
+  "captain",
+  "nomad",
+  "globetrotter",
+  "pilgrim",
+  "wanderer",
+  "seafarer",
+  "adventurer",
+  "explorer",
+  "traveler",
+  "voyager",
 ];
