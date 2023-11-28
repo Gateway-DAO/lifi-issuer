@@ -12,6 +12,14 @@ export type LifiWalletReport = {
   chainCount: number;
 };
 
+export type LifiLineaReport = {
+  _id: string;
+  fromAddress: string;
+  bucket?: string;
+  sumTransferUsd?: number;
+  transfers?: number;
+};
+
 /**
  * Gateway PDA Metrics
  */
@@ -21,6 +29,13 @@ export type GatewayMetrics = {
   totalUniqueNetworks: number;
   totalVolume: number;
   month?: Month;
+};
+
+export type LineaMetrics = {
+  wallet: string;
+  totalTransactions: number;
+  totalVolume: number;
+  week: string;
 };
 
 export function parseLifiData(lifiData: LifiWalletReport): GatewayMetrics {
