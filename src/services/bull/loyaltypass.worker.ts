@@ -42,7 +42,10 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
 
     credsByDM.forEach((cred) => {
       job.log(JSON.stringify(cred));
-      points += cred.claim.points;
+
+      // 20 points for Linea Voyage
+      points +=
+        cred.dataModel.id === process.env.ONCHAIN_DM_ID ? 20 : cred.claim.points;
 
       // if jumper onchain, aggregate loyalty pass metrics
       if (
