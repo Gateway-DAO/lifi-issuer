@@ -21,11 +21,11 @@ export const computeLineaTier = (
 };
 
 export const computePoints = (metric: string, tier: string): number => {
-  return TIER_DATA[metric]["points"][tier];
+  return TIER_DATA[metric]["points"][tier] || 0;
 };
 
 export const computeLineaPoints = (metric: string, tier: string): number => {
-  return LINEA_TIER_DATA[metric]["points"][tier];
+  return LINEA_TIER_DATA[metric]["points"][tier] || 0;
 };
 
 export const formatTier = (text: string): string => {
