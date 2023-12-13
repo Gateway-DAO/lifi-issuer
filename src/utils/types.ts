@@ -14,10 +14,8 @@ export type LifiWalletReport = {
 
 export type LifiLineaReport = {
   _id: string;
-  fromAddress: string;
-  bucket?: string;
-  sumTransferUsd?: number;
-  transfers?: number;
+  count: number;
+  volume: number;
 };
 
 /**
@@ -35,7 +33,6 @@ export type LineaMetrics = {
   wallet: string;
   totalTransactions: number;
   totalVolume: number;
-  week: string;
 };
 
 export function parseLifiData(lifiData: LifiWalletReport): GatewayMetrics {

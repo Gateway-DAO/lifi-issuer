@@ -90,10 +90,9 @@ router.post("/credential/linea", async (req, res) => {
 
   const promises = credentials.map(async (lineaData) => {
     await dispatchLineaHandler({
-      wallet: ethers.getAddress(lineaData.fromAddress),
-      totalTransactions: lineaData.transfers,
-      totalVolume: lineaData.sumTransferUsd,
-      week: lineaData.bucket,
+      wallet: ethers.getAddress(lineaData._id),
+      totalTransactions: lineaData.count,
+      totalVolume: lineaData.volume,
     });
 
     // add 5 second backoff
@@ -260,12 +259,14 @@ async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
 
   const children = [
     {
-      name: `${lineaMetrics.wallet}-${lineaMetrics.week}`,
+      name: `${lineaMetrics.wallet}`,
       queueName: "issue-credential",
       data: {
         recipient: lineaMetrics.wallet,
-        title: `Linea Voyage - ${lineaMetrics.week}`, // TODO: validate PDA title
-        description: "Linea Voyage PDA Description", // TODO: update description
+        // TODO: Validate title
+        title: `Linea Voyage`,
+        // TODO: Validate description
+        description: "Linea Voyage PDA Description",
         claim: {
           volume: Number(lineaMetrics.totalVolume).toLocaleString("en-US", {
             style: "currency",
@@ -274,14 +275,15 @@ async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
           transactions: lineaMetrics.totalTransactions,
           points: volumePoints + transactionsPoints,
         },
-        image: "", // TODO: linea image
+        // TODO: linea image
+        image: "",
         dataModelId: process.env.ONCHAIN_DM_ID,
         points: volumePoints + transactionsPoints,
         tags: ["DeFi", "Bridging"],
         campaign: "linea",
       },
       opts: {
-        jobId: `issue-volume-${lineaMetrics.week}-${lineaMetrics.wallet}`,
+        jobId: `issue-volume-${lineaMetrics.wallet}`,
       },
     },
   ];
