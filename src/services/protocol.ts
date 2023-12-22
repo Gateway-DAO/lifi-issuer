@@ -163,7 +163,7 @@ export class Gateway {
       ) {
         createCredential(
           createCredentialInput: {
-            recipientUserIdentity: $recipient
+            recipientUserGatewayIdOrWallet: $recipient
             description: $description
             title: $title
             image: $image
