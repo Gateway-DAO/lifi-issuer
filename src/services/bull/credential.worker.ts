@@ -1,6 +1,6 @@
 import { Job, Worker } from "bullmq";
 import { Gateway } from "../protocol";
-import { defaultConnectionOpts, defaultWorkerOpts } from "./config";
+import { defaultWorkerOpts } from "./config";
 import CredentialQueueData from "./credential.data";
 
 const gt = new Gateway();
@@ -24,7 +24,9 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
       job.log(`recipientUser: ${recipientUser?.id}`);
     } catch (err) {
       job.log(`Error getting the user for wallet ${recipient}`);
-      throw new Error("Error getting the user, please try again later");
+      await new Promise((resolve) =>
+        setTimeout(resolve, parseInt(process.env.BULLMQ_BACKOFF))
+      );
     }
 
     // check for existing user's credentials
