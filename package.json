@@ -9,6 +9,7 @@
     "start": "ts-node src/index.ts",
     "dev": "nodemon src/index.ts",
     "playground": "docker compose -f docker/docker-compose.yml up -d --build redis issuer-playground",
+    "production": "docker compose -f docker/docker-compose.yml up -d --build redis issuer",
     "stop": "docker compose -f docker/docker-compose.yml down -v",
     "redis": "docker compose -f ./docker/docker-compose.yml up -d redis",
     "redis:stop": "docker compose -f ./docker/docker-compose.yml down -v redis"
