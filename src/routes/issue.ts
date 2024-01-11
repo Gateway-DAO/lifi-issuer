@@ -263,10 +263,9 @@ async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
       queueName: "issue-credential",
       data: {
         recipient: lineaMetrics.wallet,
-        // TODO: Validate title
         title: `Linea Voyage`,
-        // TODO: Validate description
-        description: "Linea Voyage PDA Description",
+        description:
+          "Representation of users bridging activity on Jumper Exchange during the Linea Voyage Campaign.",
         claim: {
           volume: Number(lineaMetrics.totalVolume).toLocaleString("en-US", {
             style: "currency",
@@ -275,8 +274,7 @@ async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
           transactions: lineaMetrics.totalTransactions,
           points: volumePoints + transactionsPoints,
         },
-        // TODO: linea image
-        image: "",
+        image: "https://cdn.mygateway.xyz/implementations/linea+voyage.png",
         dataModelId: process.env.ONCHAIN_DM_ID,
         points: volumePoints + transactionsPoints,
         tags: ["DeFi", "Bridging"],
