@@ -5,11 +5,16 @@ import {
   ORG_ID,
   TIER_DATA,
 } from "../../utils/tiers";
-import { Gateway } from "../../services/protocol";
 import { defaultWorkerOpts } from "./config";
 import LoyaltyPassQueueData from "./loyaltypass.data";
+import { Gateway, UserIdentifierType } from "@gateway-dao/sdk";
+import { DecryptedPDA } from "@gateway-dao/sdk/dist/gatewaySdk";
 
-const gt = new Gateway();
+const gt = new Gateway({
+  apiKey: process.env.PROTOCOL_API_KEY,
+  url: process.env.PROTOCOL_GRAPHQL_URL as string,
+  token: process.env.PROTOCOL_API_JWT as string,
+});
 
 const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
   "loyalty-pass",
@@ -17,7 +22,13 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
     // Find protocol::User for wallet
     const wallet = job.data.wallet;
 
-    const wallet_userId = (await gt.getUserByWallet(wallet))?.id;
+    const wallet_userId = (
+      await gt.user.getSingleUser({
+        type: UserIdentifierType.EVM,
+        value: wallet,
+      })
+    )?.user.id;
+
     job.log(`[wallet ${wallet}] walletUser: ${wallet_userId}`);
 
     if (!wallet_userId) {
@@ -30,22 +41,31 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
     let totalVolume = 0;
     let points = 0;
 
-    const credsByDM = await gt.earnedCredentialsByIdByDataModels(
-      wallet_userId,
-      [
-        TIER_DATA["volume"].data_model,
-        TIER_DATA["transactions"].data_model,
-        TIER_DATA["networks"].data_model,
-        ...(process.env.ONCHAIN_DM_ID ? [process.env.ONCHAIN_DM_ID] : []),
-      ]
-    );
+    const credsByDM = await gt.pda.getPDAs({
+      filter: {
+        dataModelIds: [
+          TIER_DATA["volume"].data_model,
+          TIER_DATA["transactions"].data_model,
+          TIER_DATA["networks"].data_model,
+          ...(process.env.ONCHAIN_DM_ID ? [process.env.ONCHAIN_DM_ID] : []),
+        ],
+        owner: {
+          type: UserIdentifierType.USER_ID,
+          value: wallet_userId,
+        },
+      },
+    });
 
-    credsByDM.forEach((cred) => {
+    credsByDM.PDAs.forEach((cred) => {
       job.log(JSON.stringify(cred));
+
+      const asset = cred.dataAsset as DecryptedPDA;
 
       // 20 points for Linea Voyage
       points +=
-        cred.dataModel.id === process.env.ONCHAIN_DM_ID ? 20 : cred.claim.points;
+        cred.id === process.env.ONCHAIN_DM_ID
+          ? 20
+          : cred.dataAsset.claim.points;
 
       // if jumper onchain, aggregate loyalty pass metrics
       if (
@@ -53,14 +73,14 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
           TIER_DATA["volume"].data_model,
           TIER_DATA["transactions"].data_model,
           TIER_DATA["networks"].data_model,
-        ].includes(cred.dataModel.id)
+        ].includes(asset.dataModel.id)
       ) {
-        if (cred.claim?.volume) {
-          totalVolume += Number(cred.claim.volume.replace(/\$|,/g, ""));
-        } else if (cred.claim?.transactions) {
-          totalTxs += cred.claim.transactions;
-        } else if (cred.claim?.chains) {
-          totalChains += cred.claim.chains;
+        if (asset.claim?.volume) {
+          totalVolume += Number(asset.claim.volume.replace(/\$|,/g, ""));
+        } else if (asset.claim?.transactions) {
+          totalTxs += asset.claim.transactions;
+        } else if (asset.claim?.chains) {
+          totalChains += asset.claim.chains;
         }
       }
     });
@@ -71,13 +91,19 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
     }
 
     // Check if user has a loyalty pass
-    const credByLPDM = await gt.earnedCredentialsByIdByDataModels(
-      wallet_userId,
-      [LOYALTY_DM_ID]
-    );
-    if (credByLPDM !== undefined && credByLPDM.length > 0) {
+    const credByLPDM = await gt.pda.getPDAs({
+      filter: {
+        owner: {
+          type: UserIdentifierType.USER_ID,
+          value: wallet_userId,
+        },
+        dataModelIds: [LOYALTY_DM_ID],
+      },
+    });
+
+    if (credByLPDM !== undefined && credByLPDM.PDAs.length > 0) {
       job.log(
-        `[wallet: ${wallet}] Wallet has ${credByLPDM.length} Loyalty Passes`
+        `[wallet: ${wallet}] Wallet has ${credByLPDM.PDAs.length} Loyalty Passes`
       );
 
       // -> update if exists
@@ -108,7 +134,7 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
             ).title,
           })}`
         );
-        await gt.updateCredential({
+        await gt.pda.updatePDA({
           id: lp.id,
           claim: {
             ...lp.claim,
@@ -156,8 +182,11 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
         })}`
       );
 
-      await gt.issueCredential({
-        recipient: wallet,
+      await gt.pda.createPDA({
+        owner: {
+          type: UserIdentifierType.EVM,
+          value: wallet,
+        },
         title: "LI.FI Loyalty Pass",
         description: `LI.FI Loyalty Pass is a user-owned and operated consumer recognition method. Using the Loyalty Pass, LI.FI issues private data assets for on-chain activity via Jumper Exchange, interacting with community campaigns, and other engagement across LI.FI powered products.This loyalty pass can be used in the future for unique experiences and benefits across the LI.FI ecosystem`,
         claim: {
@@ -172,9 +201,11 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
             (tier) => tier.min <= points && tier.max >= points
           ).title,
         },
-        orgId: ORG_ID,
+        organization: {
+          type: "ORG_ID",
+          value: ORG_ID,
+        },
         dataModelId: LOYALTY_DM_ID,
-        tags: ["DeFi", "Bridging"],
         image:
           "https://cdn.mygateway.xyz/implementations/jumper_loyalty_pass.png",
       });
