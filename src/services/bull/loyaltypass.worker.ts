@@ -36,18 +36,32 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
         TIER_DATA["volume"].data_model,
         TIER_DATA["transactions"].data_model,
         TIER_DATA["networks"].data_model,
+        ...(process.env.ONCHAIN_DM_ID ? [process.env.ONCHAIN_DM_ID] : []),
       ]
     );
 
     credsByDM.forEach((cred) => {
       job.log(JSON.stringify(cred));
-      points += cred.claim.points;
-      if (cred.claim.volume) {
-        totalVolume += Number(cred.claim.volume.replace(/\$|,/g, ""));
-      } else if (cred.claim.transactions) {
-        totalTxs += cred.claim.transactions;
-      } else if (cred.claim.chains) {
-        totalChains += cred.claim.chains;
+
+      // 20 points for Linea Voyage
+      points +=
+        cred.dataModel.id === process.env.ONCHAIN_DM_ID ? 20 : cred.claim.points;
+
+      // if jumper onchain, aggregate loyalty pass metrics
+      if (
+        [
+          TIER_DATA["volume"].data_model,
+          TIER_DATA["transactions"].data_model,
+          TIER_DATA["networks"].data_model,
+        ].includes(cred.dataModel.id)
+      ) {
+        if (cred.claim?.volume) {
+          totalVolume += Number(cred.claim.volume.replace(/\$|,/g, ""));
+        } else if (cred.claim?.transactions) {
+          totalTxs += cred.claim.transactions;
+        } else if (cred.claim?.chains) {
+          totalChains += cred.claim.chains;
+        }
       }
     });
 

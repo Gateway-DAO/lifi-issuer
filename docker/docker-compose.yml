@@ -1,6 +1,8 @@
 networks:
   gateway-protocol:
     name: gateway/protocol
+  exalton:
+    external: true
 
 services:
   redis:
@@ -10,3 +12,33 @@ services:
       - 6379:6379
     networks:
       - gateway-protocol
+
+  issuer:
+    container_name: gateway-issuer
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
+      args:
+        - ENV_PATH=.env.production
+    ports:
+      - 1111:8000
+    volumes:
+      - ../data:/app/data:ro
+    networks:
+      - gateway-protocol
+      - exalton
+
+  issuer-playground:
+    container_name: gateway-issuer-playground
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
+      args:
+        - ENV_PATH=.env.playground
+    ports:
+      - 8080:8000
+    volumes:
+      - ../data:/app/data:ro
+    networks:
+      - gateway-protocol
+      - exalton
