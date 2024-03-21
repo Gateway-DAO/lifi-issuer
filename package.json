@@ -20,6 +20,7 @@
   "dependencies": {
     "@bull-board/api": "^5.8.4",
     "@bull-board/express": "^5.8.4",
+    "@gateway-dao/sdk": "^2.0.0",
     "axios": "^1.5.1",
     "bullmq": "^4.12.2",
     "cors": "^2.8.5",

@@ -1,9 +1,21 @@
 import { Job, Worker } from "bullmq";
-import { Gateway } from "../protocol";
 import { defaultWorkerOpts } from "./config";
 import CredentialQueueData from "./credential.data";
+import {
+  Gateway,
+  OrganizationIdentifierType,
+  UserIdentifierType,
+} from "@gateway-dao/sdk";
+import {
+  PDAs_queryQuery,
+  user_queryQuery,
+} from "@gateway-dao/sdk/dist/gatewaySdk";
 
-const gt = new Gateway();
+const gt = new Gateway({
+  apiKey: process.env.PROTOCOL_API_KEY,
+  url: process.env.PROTOCOL_GRAPHQL_URL as string,
+  token: process.env.PROTOCOL_API_JWT as string,
+});
 
 const CredentialQueueWorker = new Worker<CredentialQueueData>(
   "issue-credential",
@@ -18,10 +30,13 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
     console.log(`Getting ${recipient} user...`);
 
     // check for existing user by wallet
-    let recipientUser: Record<string, any>;
+    let recipientUser: user_queryQuery;
     try {
-      recipientUser = await gt.getUserByWallet(recipient);
-      job.log(`recipientUser: ${recipientUser?.id}`);
+      recipientUser = await gt.user.getSingleUser({
+        type: UserIdentifierType.EVM,
+        value: recipient,
+      });
+      job.log(`recipientUser: ${recipientUser?.user?.id}`);
     } catch (err) {
       job.log(`Error getting the user for wallet ${recipient}`);
       await new Promise((resolve) =>
@@ -30,12 +45,17 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
     }
 
     // check for existing user's credentials
-    let existingCredByDM: Record<string, any>;
+    let existingCredByDM: PDAs_queryQuery;
     if (recipientUser) {
-      existingCredByDM = await gt.earnedCredentialsByIdByDataModels(
-        recipientUser.id,
-        [dataModelId]
-      );
+      existingCredByDM = await gt.pda.getPDAs({
+        filter: {
+          dataModelIds: [dataModelId],
+          owner: {
+            type: UserIdentifierType.USER_ID,
+            value: recipientUser.user.id,
+          },
+        },
+      });
     }
 
     if (existingCredByDM) {
@@ -45,8 +65,8 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
         )}`
       );
 
-      const cred = existingCredByDM.find(
-        (cred) => cred.title === title && cred.dataModel.id === dataModelId
+      const cred = existingCredByDM.PDAs.find(
+        (cred) => cred.dataAsset.title === title && cred.id === dataModelId
       );
 
       if (cred) {
@@ -70,14 +90,19 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
 
     job.updateProgress(66);
 
-    const cred = await gt.issueCredential({
-      recipient,
+    const cred = await gt.pda.createPDA({
+      owner: {
+        type: UserIdentifierType.EVM,
+        value: recipient,
+      },
       title,
       description,
       claim,
       dataModelId,
-      orgId: process.env.ORG_ID,
-      tags,
+      organization: {
+        type: OrganizationIdentifierType.ORG_ID,
+        value: process.env.ORG_ID,
+      },
       image,
     });
 
