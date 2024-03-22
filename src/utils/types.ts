@@ -52,10 +52,10 @@ export type CampaignMetrics = {
 };
 
 export enum Campaign {
-  OG = "OG",
-  BOOSTOR = "BOOSTOR",
-  TRANSFERTO = "TRANSFERTO",
-  LINEA = "LINEA",
+  OG = "og",
+  BOOSTOR = "boostor",
+  TRANSFERTO = "transferto",
+  LINEA = "linea",
 }
 
 export function parseLifiData(lifiData: LifiWalletReport): GatewayMetrics {
