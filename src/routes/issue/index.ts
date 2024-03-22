@@ -2,11 +2,17 @@ import { ethers } from "ethers";
 import { Router } from "express";
 import { CreateOrUpdateLoyaltyPassQueue } from "../../services/bull";
 import {
+  Campaign,
+  LifiCampaignReport,
   LifiLineaReport,
   LifiWalletReport,
   parseLifiData,
 } from "../../utils/types";
-import { dispatchLineaHandler, dispatchWalletHandler } from "./dispatch";
+import {
+  dispatchCampaignHandler,
+  dispatchLineaHandler,
+  dispatchWalletHandler,
+} from "./dispatch";
 
 const router = Router();
 
@@ -28,24 +34,24 @@ router.post("/loyalty-pass", async (req, res) => {
   res.status(200).send(LoyaltyPasses);
 });
 
-router.post("/credential", async (req, res) => {
+router.post("/pda", async (req, res) => {
   // collect loyaltypass and pda filepaths from the request header
-  const { credential } = req.headers;
-  if (!credential) {
-    res.status(400).send("Missing credential file as header");
+  const { pda } = req.headers;
+  if (!pda) {
+    res.status(400).send("Missing pda file as header");
   }
 
-  let credentials: LifiWalletReport[] = [];
+  let pdas: LifiWalletReport[] = [];
 
   try {
-    credentials = require(credential as string);
+    pdas = require(pda as string);
   } catch (err) {
     return res.status(400).send({
       error: "Invalid PDA file",
     });
   }
 
-  const promises = credentials.map(async (lifiData) => {
+  const promises = pdas.map(async (lifiData) => {
     await dispatchWalletHandler(parseLifiData(lifiData));
 
     // add 5 second backoff
@@ -53,25 +59,26 @@ router.post("/credential", async (req, res) => {
   });
   await Promise.all(promises);
 
-  res.status(200).send(credentials);
+  res.status(200).send(pdas);
 });
 
-router.post("/credential/linea", async (req, res) => {
-  const { credential } = req.headers;
-  if (!credential) {
-    res.status(400).send("Missing credential file as header");
+// TODO: put this route inside of /pda/campaign
+router.post("/pda/linea", async (req, res) => {
+  const { pda } = req.headers;
+  if (!pda) {
+    res.status(400).send("Missing pda file as header");
   }
 
-  let credentials: LifiLineaReport[] = [];
+  let pdas: LifiLineaReport[] = [];
   try {
-    credentials = require(credential as string);
+    pdas = require(pda as string);
   } catch (err) {
     return res.status(400).send({
       error: "Invalid PDA file",
     });
   }
 
-  const promises = credentials.map(async (lineaData) => {
+  const promises = pdas.map(async (lineaData) => {
     await dispatchLineaHandler({
       wallet: ethers.getAddress(lineaData._id),
       totalTransactions: lineaData.count,
@@ -83,7 +90,39 @@ router.post("/credential/linea", async (req, res) => {
   });
   await Promise.all(promises);
 
-  res.status(200).send(credentials);
+  res.status(200).send(pdas);
+});
+
+router.post("/pda/campaign", async (req, res) => {
+  const { pda, campaign } = req.headers;
+  if (!pda) {
+    res.status(400).send("Missing pda file as header");
+  }
+
+  let pdas: LifiCampaignReport[] = [];
+  try {
+    pdas = require(pda as string);
+  } catch (err) {
+    return res.status(400).send({
+      error: "Invalid PDA file",
+    });
+  }
+
+  const promises = pdas.map(async (lineaData) => {
+    await dispatchCampaignHandler(
+      {
+        wallet: ethers.getAddress(lineaData.fromAddress),
+        points: lineaData.points,
+      },
+      campaign as Campaign
+    );
+
+    // add 5 second backoff
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  });
+  await Promise.all(promises);
+
+  res.status(200).send(pdas);
 });
 
 export default router;
