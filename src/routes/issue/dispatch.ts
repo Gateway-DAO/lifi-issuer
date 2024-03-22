@@ -1,11 +1,8 @@
-import { ethers } from "ethers";
-import { Router } from "express";
 import {
-  CreateOrUpdateLoyaltyPassQueue,
   CreateOrUpdateLoyaltyPassWorker,
   CredentialQueueWorker,
   UpdateLoyaltyPassFlowProducer,
-} from "../services/bull";
+} from "../../services/bull";
 import {
   DESCRIPTION_TRANSLATED,
   METRICS_TRANSLATED,
@@ -16,94 +13,14 @@ import {
   computePoints,
   computeTier,
   formatTier,
-} from "../utils/tiers";
-import {
-  GatewayMetrics,
-  LifiLineaReport,
-  LifiWalletReport,
-  LineaMetrics,
-  parseLifiData,
-} from "../utils/types";
+} from "../../utils/tiers";
+import { GatewayMetrics, LineaMetrics } from "../../utils/types";
 
-const router = Router();
+/**
+ * MONTHLY PDAs
+ */
 
-router.post("/loyalty-pass", async (req, res) => {
-  const { loyaltypass } = req.headers;
-  if (!loyaltypass) {
-    res.status(400).send("Missing LoyaltyPass file as header");
-  }
-
-  const LoyaltyPasses = require(loyaltypass as string);
-
-  const promises = LoyaltyPasses.map(async ({ wallet: recipient }) => {
-    CreateOrUpdateLoyaltyPassQueue.add("create_or_update-loyalty-pass", {
-      wallet: ethers.getAddress(recipient),
-    });
-  });
-  await Promise.all(promises);
-
-  res.status(200).send(LoyaltyPasses);
-});
-
-router.post("/credential", async (req, res) => {
-  // collect loyaltypass and pda filepaths from the request header
-  const { credential } = req.headers;
-  if (!credential) {
-    res.status(400).send("Missing credential file as header");
-  }
-
-  let credentials: LifiWalletReport[] = [];
-
-  try {
-    credentials = require(credential as string);
-  } catch (err) {
-    return res.status(400).send({
-      error: "Invalid PDA file",
-    });
-  }
-
-  const promises = credentials.map(async (lifiData) => {
-    await dispatchWalletHandler(parseLifiData(lifiData));
-
-    // add 5 second backoff
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  });
-  await Promise.all(promises);
-
-  res.status(200).send(credentials);
-});
-
-router.post("/credential/linea", async (req, res) => {
-  const { credential } = req.headers;
-  if (!credential) {
-    res.status(400).send("Missing credential file as header");
-  }
-
-  let credentials: LifiLineaReport[] = [];
-  try {
-    credentials = require(credential as string);
-  } catch (err) {
-    return res.status(400).send({
-      error: "Invalid PDA file",
-    });
-  }
-
-  const promises = credentials.map(async (lineaData) => {
-    await dispatchLineaHandler({
-      wallet: ethers.getAddress(lineaData._id),
-      totalTransactions: lineaData.count,
-      totalVolume: lineaData.volume,
-    });
-
-    // add 5 second backoff
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  });
-  await Promise.all(promises);
-
-  res.status(200).send(credentials);
-});
-
-async function dispatchWalletHandler(credentialMetrics: GatewayMetrics) {
+export async function dispatchWalletHandler(credentialMetrics: GatewayMetrics) {
   await CredentialQueueWorker.waitUntilReady();
   await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
 
@@ -244,7 +161,11 @@ async function dispatchWalletHandler(credentialMetrics: GatewayMetrics) {
   });
 }
 
-async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
+/**
+ * ONE-OFF CAMPAIGNS
+ */
+
+export async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
   await CredentialQueueWorker.waitUntilReady();
   await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
 
@@ -304,5 +225,3 @@ async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
     },
   });
 }
-
-export default router;
