@@ -12,12 +12,22 @@ export type LifiWalletReport = {
   chainCount: number;
 };
 
+/**
+ * LI.FI Exported Campaign Metadata
+ */
+
 export type LifiLineaReport = {
   _id: string;
   count: number;
   volume: number;
 };
 
+// NOTE: OG, Boostor and TransferTo campaigns follow the same structure
+export type LifiCampaignReport = {
+  _id: string;
+  points: number;
+  fromAddress: string;
+};
 /**
  * Gateway PDA Metrics
  */
@@ -34,6 +44,19 @@ export type LineaMetrics = {
   totalTransactions: number;
   totalVolume: number;
 };
+
+// NOTE: OG, Boostor and TransferTo campaigns follow the same structure
+export type CampaignMetrics = {
+  wallet: string;
+  points: number;
+};
+
+export enum Campaign {
+  OG = "OG",
+  BOOSTOR = "BOOSTOR",
+  TRANSFERTO = "TRANSFERTO",
+  LINEA = "LINEA",
+}
 
 export function parseLifiData(lifiData: LifiWalletReport): GatewayMetrics {
   return {
