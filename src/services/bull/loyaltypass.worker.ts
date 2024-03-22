@@ -4,7 +4,7 @@ import {
   LOYALTY_PASS_TIERS,
   ORG_ID,
   TIER_DATA,
-} from "../../utils/tiers";
+} from "../../utils/constants";
 import { defaultWorkerOpts } from "./config";
 import LoyaltyPassQueueData from "./loyaltypass.data";
 import { Gateway, UserIdentifierType } from "@gateway-dao/sdk";

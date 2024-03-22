@@ -4,17 +4,25 @@ import {
   UpdateLoyaltyPassFlowProducer,
 } from "../../services/bull";
 import {
-  DESCRIPTION_TRANSLATED,
-  METRICS_TRANSLATED,
-  MONTHS_TRANSLATED,
-  TIER_DATA,
+  computeCampaignTier,
   computeLineaPoints,
   computeLineaTier,
   computePoints,
   computeTier,
   formatTier,
-} from "../../utils/tiers";
-import { GatewayMetrics, LineaMetrics } from "../../utils/types";
+} from "../../utils/helpers";
+import {
+  DESCRIPTION_TRANSLATED,
+  METRICS_TRANSLATED,
+  MONTHS_TRANSLATED,
+  TIER_DATA,
+} from "../../utils/constants";
+import {
+  Campaign,
+  CampaignMetrics,
+  GatewayMetrics,
+  LineaMetrics,
+} from "../../utils/types";
 
 /**
  * MONTHLY PDAs
@@ -217,6 +225,59 @@ export async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
     children,
     opts: {
       jobId: `loyaltypass-${lineaMetrics.wallet}`,
+      attempts: parseInt(process.env.BULLMQ_RETRY) || 5,
+      backoff: {
+        type: "exponential",
+        delay: parseInt(process.env.BULLMQ_BACKOFF) || 500,
+      },
+    },
+  });
+}
+
+export async function dispatchCampaignHandler(
+  campaignMetrics: CampaignMetrics,
+  campaign: Campaign
+) {
+  await CredentialQueueWorker.waitUntilReady();
+  await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
+
+  const tier = computeCampaignTier(campaign, campaignMetrics.points);
+
+  const children = [
+    {
+      name: `${campaignMetrics.wallet}`,
+      queueName: "issue-credential",
+      data: {
+        recipient: campaignMetrics.wallet,
+        title: `Linea Voyage`,
+        description:
+          "Representation of users bridging activity on Jumper Exchange during the Linea Voyage Campaign.",
+        claim: {
+          points: campaignMetrics.points,
+          tier,
+        },
+        image: "https://cdn.mygateway.xyz/implementations/linea+voyage.png",
+        dataModelId: process.env.ONCHAIN_DM_ID,
+        points: campaignMetrics.points,
+        tags: ["DeFi", "Bridging"],
+        campaign: Campaign,
+      },
+      opts: {
+        jobId: `issue-${Campaign}-${campaignMetrics.wallet}`,
+      },
+    },
+  ];
+
+  UpdateLoyaltyPassFlowProducer.add({
+    name: `${campaignMetrics.wallet}`,
+    queueName: "loyalty-pass",
+    data: {
+      wallet: campaignMetrics.wallet,
+      campaign: Campaign,
+    },
+    children,
+    opts: {
+      jobId: `loyaltypass-${campaignMetrics.wallet}`,
       attempts: parseInt(process.env.BULLMQ_RETRY) || 5,
       backoff: {
         type: "exponential",
