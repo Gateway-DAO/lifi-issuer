@@ -46,7 +46,7 @@ const CredentialQueueWorker = new Worker<CredentialQueueData>(
 
     // check for existing user's credentials
     let existingCredByDM: PDAs_queryQuery;
-    if (recipientUser) {
+    if (recipientUser?.user?.id) {
       existingCredByDM = await gt.pda.getPDAs({
         filter: {
           dataModelIds: [dataModelId],
