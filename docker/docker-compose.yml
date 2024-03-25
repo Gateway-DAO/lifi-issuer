@@ -1,8 +1,6 @@
 networks:
   gateway-protocol:
     name: gateway/protocol
-  exalton:
-    external: true
 
 services:
   redis:
@@ -26,7 +24,6 @@ services:
       - ../data:/app/data:ro
     networks:
       - gateway-protocol
-      - exalton
 
   issuer-playground:
     container_name: gateway-issuer-playground
@@ -41,4 +38,3 @@ services:
       - ../data:/app/data:ro
     networks:
       - gateway-protocol
-      - exalton
