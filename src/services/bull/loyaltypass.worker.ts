@@ -1,5 +1,6 @@
 import { Job, Worker } from "bullmq";
 import {
+  CAMPAIGN_DATA,
   LOYALTY_DM_ID,
   LOYALTY_PASS_TIERS,
   ORG_ID,
@@ -47,33 +48,37 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
           TIER_DATA["volume"].data_model,
           TIER_DATA["transactions"].data_model,
           TIER_DATA["networks"].data_model,
-          ...(process.env.ONCHAIN_DM_ID ? [process.env.ONCHAIN_DM_ID] : []),
+          CAMPAIGN_DATA.boostor.dataModel,
+          CAMPAIGN_DATA.og.dataModel,
+          CAMPAIGN_DATA.linea.dataModel,
+          CAMPAIGN_DATA.transferto.dataModel,
         ],
         owner: {
           type: UserIdentifierType.USER_ID,
           value: wallet_userId,
         },
       },
+      take: 100,
     });
 
     credsByDM.PDAs.forEach((cred) => {
-      job.log(JSON.stringify(cred));
-
       const asset = cred.dataAsset as DecryptedPDA;
-
       // 20 points for Linea Voyage
-      points +=
-        cred.id === process.env.ONCHAIN_DM_ID
-          ? 20
-          : cred.dataAsset.claim.points;
+      points += asset.title.includes(CAMPAIGN_DATA.linea.title)
+        ? 20
+        : asset.claim.points;
 
-      // if jumper onchain, aggregate loyalty pass metrics
+      job.log(
+        `[wallet ${wallet}] cred: ${JSON.stringify(asset.title)} / points: ${
+          asset.claim.points
+        }`
+      );
+
+      // if monthly PDA, aggregate loyalty pass metrics
       if (
-        [
-          TIER_DATA["volume"].data_model,
-          TIER_DATA["transactions"].data_model,
-          TIER_DATA["networks"].data_model,
-        ].includes(asset.dataModel.id)
+        asset.title.includes("Chainoor") ||
+        asset.title.includes("Transactoor") ||
+        asset.title.includes("Volumoor")
       ) {
         if (asset.claim?.volume) {
           totalVolume += Number(asset.claim.volume.replace(/\$|,/g, ""));
@@ -84,6 +89,8 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
         }
       }
     });
+
+    job.log(`[wallet ${wallet}] points: ${points}`);
 
     // if the user does not have any points, skip
     if (points == 0) {
@@ -107,21 +114,16 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
       );
 
       // -> update if exists
-      const lp = credByLPDM[0];
+      const lp = credByLPDM.PDAs[0];
 
       // - -> only update if totalPoints are different
-      if (
-        lp.claim.points != points ||
-        lp.claim.totalTxs != totalTxs ||
-        lp.claim.totalChains != totalChains ||
-        Number(lp.claim.totalVolume.replace(/\$|,/g, "")) !== totalVolume
-      ) {
+      if (lp.dataAsset.claim.points != points) {
         job.log(
-          `[wallet ${wallet}] update lp points: ${lp.claim.points} => ${points}`
+          `[wallet ${wallet}] update lp points: ${lp.dataAsset.claim.points} => ${points}`
         );
         job.log(
           `new claims: ${JSON.stringify({
-            ...lp.claim,
+            ...lp.dataAsset.claim,
             points,
             totalTxs,
             totalChains,
@@ -137,7 +139,7 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
         await gt.pda.updatePDA({
           id: lp.id,
           claim: {
-            ...lp.claim,
+            ...lp.dataAsset.claim,
             points,
             totalTxs,
             totalChains,
@@ -152,7 +154,7 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
         });
       } else {
         job.log(
-          `[wallet ${wallet}] no update needed lp: ${{
+          `[wallet ${wallet}] no update needed lp: ${JSON.stringify({
             points,
             totalTxs,
             totalChains,
@@ -163,7 +165,7 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
             tier: Object.values(LOYALTY_PASS_TIERS).find(
               (tier) => tier.min <= points && tier.max >= points
             ).title,
-          }}`
+          })}`
         );
 
         return {};
