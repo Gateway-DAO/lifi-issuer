@@ -58,6 +58,21 @@ export enum Campaign {
   LINEA = "linea",
 }
 
+export function getCampaignType(campaign: string): Campaign {
+  switch (campaign) {
+    case "og":
+      return Campaign.OG;
+    case "boostor":
+      return Campaign.BOOSTOR;
+    case "transferto":
+      return Campaign.TRANSFERTO;
+    case "linea":
+      return Campaign.LINEA;
+    default:
+      throw new Error("Invalid campaign type");
+  }
+}
+
 export function parseLifiData(lifiData: LifiWalletReport): GatewayMetrics {
   return {
     wallet: ethers.getAddress(lifiData.fromAddress),
