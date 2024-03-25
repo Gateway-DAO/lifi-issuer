@@ -1,4 +1,4 @@
-import { Month } from "./types";
+import { Campaign, Month } from "./types";
 
 export const ORG_ID = process.env.ORG_ID!;
 export const LOYALTY_DM_ID = process.env.LOYALTY_DM_ID!;
@@ -68,6 +68,78 @@ export const TIER_DATA = {
       ape: 33,
       degen: 40,
       grand_degen: 50,
+    },
+  },
+};
+
+export const CAMPAIGN_DATA = {
+  [Campaign.BOOSTOR]: {
+    title: "xp_boost",
+    description:
+      "This is a one-off PDA issued by LI.FI to the users of Jumper based on the volume generated through insurance",
+    image: "https://jumper-static.s3.us-east-2.amazonaws.com/xpboost.png",
+    dataModel: process.env.BOOSTOR_DM_ID!,
+    points: {
+      baby: 7,
+      power_user: 8,
+      chad: 10,
+      ape: 18,
+      degen: 25,
+    },
+  },
+  [Campaign.TRANSFERTO]: {
+    title: "TransferTo.xyz",
+    description:
+      "This is a one-off PDA issued by LI.FI to the users of transferto.xyz based on the total volume generated",
+    image: "https://jumper-static.s3.us-east-2.amazonaws.com/transfertoxyz.png",
+    dataModel: process.env.TRANSFERTO_DM_ID!,
+    points: {
+      baby: 100,
+      power_user: 300,
+      chad: 500,
+    },
+  },
+  [Campaign.OG]: {
+    title: "jumper_og",
+    description:
+      "This is a one-off PDA issued by LI.FI to the Jumper OG community",
+    image: "https://jumper-static.s3.us-east-2.amazonaws.com/og.png",
+    dataModel: process.env.JUMPER_OG_DM_ID!,
+    points: {
+      baby: 100,
+    },
+  },
+  [Campaign.LINEA]: {
+    title: "Linea Voyage",
+    description:
+      "Representation of users bridging activity on Jumper Exchange during the Linea Voyage Campaign.",
+    image: "https://cdn.mygateway.xyz/implementations/linea+voyage.png",
+    dataModel: process.env.ONCHAIN_DM_ID!,
+    points: {
+      volume: {
+        voyager: 5.243,
+        traveler: 10.313,
+        explorer: 15.415,
+        adventurer: 20.524,
+        seafarer: 25.641,
+        wanderer: 30.731,
+        pilgrim: 40.824,
+        globetrotter: 50.983,
+        nomad: 75.99,
+        captain: 100.999,
+      },
+      transactions: {
+        voyager: 2.245,
+        traveler: 5.321,
+        explorer: 8.453,
+        adventurer: 15.548,
+        seafarer: 20.599,
+        wanderer: 25.689,
+        pilgrim: 30.78,
+        globetrotter: 40.898,
+        nomad: 45.911,
+        captain: 50.999,
+      },
     },
   },
 };

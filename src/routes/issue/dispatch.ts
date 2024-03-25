@@ -12,6 +12,7 @@ import {
   formatTier,
 } from "../../utils/helpers";
 import {
+  CAMPAIGN_DATA,
   DESCRIPTION_TRANSLATED,
   METRICS_TRANSLATED,
   MONTHS_TRANSLATED,
@@ -242,6 +243,7 @@ export async function dispatchCampaignHandler(
   await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
 
   const tier = computeCampaignTier(campaign, campaignMetrics.points);
+  const campaignData = CAMPAIGN_DATA[campaign];
 
   const children = [
     {
@@ -249,21 +251,20 @@ export async function dispatchCampaignHandler(
       queueName: "issue-credential",
       data: {
         recipient: campaignMetrics.wallet,
-        title: `Linea Voyage`,
-        description:
-          "Representation of users bridging activity on Jumper Exchange during the Linea Voyage Campaign.",
+        title: campaignData.title,
+        description: campaignData.description,
         claim: {
           points: campaignMetrics.points,
           tier,
         },
-        image: "https://cdn.mygateway.xyz/implementations/linea+voyage.png",
-        dataModelId: process.env.ONCHAIN_DM_ID,
+        image: campaignData.image,
+        dataModelId: campaignData.dataModel,
         points: campaignMetrics.points,
         tags: ["DeFi", "Bridging"],
-        campaign: Campaign,
+        campaign,
       },
       opts: {
-        jobId: `issue-${Campaign}-${campaignMetrics.wallet}`,
+        jobId: `issue-${campaign}-${campaignMetrics.wallet}`,
       },
     },
   ];
@@ -273,7 +274,7 @@ export async function dispatchCampaignHandler(
     queueName: "loyalty-pass",
     data: {
       wallet: campaignMetrics.wallet,
-      campaign: Campaign,
+      campaign,
     },
     children,
     opts: {

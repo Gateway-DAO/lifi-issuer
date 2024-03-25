@@ -1,4 +1,5 @@
 import {
+  CAMPAIGN_DATA,
   LINEA_TIER_DATA,
   LINEA_TIER_METRIC_LIMITS,
   METRICS_TRANSLATED,
@@ -33,9 +34,15 @@ export const computeCampaignTier = (
   campaign: Campaign,
   value: number
 ): string => {
-  // TODO: Implement this function
+  const tier = sortedTiers.find((tier) => {
+    if (!CAMPAIGN_DATA[campaign].points[tier]) {
+      return false;
+    }
 
-  return "TODO";
+    return value >= CAMPAIGN_DATA[campaign].points[tier];
+  });
+
+  return tier;
 };
 
 export const computePoints = (metric: string, tier: string): number => {
