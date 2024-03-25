@@ -6,6 +6,7 @@ import {
   LifiCampaignReport,
   LifiLineaReport,
   LifiWalletReport,
+  getCampaignType,
   parseLifiData,
 } from "../../utils/types";
 import {
@@ -17,21 +18,28 @@ import {
 const router = Router();
 
 router.post("/loyalty-pass", async (req, res) => {
-  const { loyaltypass } = req.headers;
-  if (!loyaltypass) {
-    res.status(400).send("Missing LoyaltyPass file as header");
-  }
+  try {
+    const { loyaltypass } = req.headers;
+    if (!loyaltypass) {
+      res.status(400).send("Missing LoyaltyPass file as header");
+    }
 
-  const LoyaltyPasses = require(loyaltypass as string);
+    const LoyaltyPasses = require(loyaltypass as string);
 
-  const promises = LoyaltyPasses.map(async ({ wallet: recipient }) => {
-    CreateOrUpdateLoyaltyPassQueue.add("create_or_update-loyalty-pass", {
-      wallet: ethers.getAddress(recipient),
+    const promises = LoyaltyPasses.map(async ({ fromAddress: recipient }) => {
+      CreateOrUpdateLoyaltyPassQueue.add("create_or_update-loyalty-pass", {
+        wallet: ethers.getAddress(recipient),
+      });
     });
-  });
-  await Promise.all(promises);
+    await Promise.all(promises);
 
-  res.status(200).send(LoyaltyPasses);
+    res.status(200).send(LoyaltyPasses);
+  } catch (err) {
+    console.log(err);
+    res.status(400).send({
+      error: "Invalid LoyaltyPass file",
+    });
+  }
 });
 
 router.post("/pda", async (req, res) => {
@@ -108,13 +116,13 @@ router.post("/pda/campaign", async (req, res) => {
     });
   }
 
-  const promises = pdas.map(async (lineaData) => {
+  const promises = pdas.map(async (campaignData) => {
     await dispatchCampaignHandler(
       {
-        wallet: ethers.getAddress(lineaData.fromAddress),
-        points: lineaData.points,
+        wallet: ethers.getAddress(campaignData.fromAddress),
+        points: campaignData.points,
       },
-      campaign as Campaign
+      getCampaignType(campaign as string)
     );
 
     // add 5 second backoff
