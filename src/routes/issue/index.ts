@@ -13,6 +13,7 @@ import {
   dispatchCampaignHandler,
   dispatchLineaHandler,
   dispatchWalletHandler,
+  dispatchWalletHandlerV1,
 } from "./dispatch";
 
 const router = Router();
@@ -40,6 +41,34 @@ router.post("/loyalty-pass", async (req, res) => {
       error: "Invalid LoyaltyPass file",
     });
   }
+});
+
+router.post("/pda/v1", async (req, res) => {
+  // collect loyaltypass and pda filepaths from the request header
+  const { pda } = req.headers;
+  if (!pda) {
+    res.status(400).send("Missing pda file as header");
+  }
+
+  let pdas: LifiWalletReport[] = [];
+
+  try {
+    pdas = require(pda as string);
+  } catch (err) {
+    return res.status(400).send({
+      error: "Invalid PDA file",
+    });
+  }
+
+  const promises = pdas.map(async (lifiData) => {
+    await dispatchWalletHandlerV1(parseLifiData(lifiData));
+
+    // add 5 second backoff
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  });
+  await Promise.all(promises);
+
+  res.status(200).send(pdas);
 });
 
 router.post("/pda", async (req, res) => {
