@@ -13,8 +13,6 @@ import {
 } from "../../utils/helpers";
 import {
   CAMPAIGN_DATA,
-  DESCRIPTION_TRANSLATED,
-  METRICS_TRANSLATED,
   MONTHS_TRANSLATED,
   TIER_DATA,
 } from "../../utils/constants";
@@ -23,132 +21,27 @@ import {
   CampaignMetrics,
   GatewayMetrics,
   LineaMetrics,
+  MonthlyPDA,
 } from "../../utils/types";
 
 /**
  * MONTHLY PDAs
  */
 
-export async function dispatchWalletHandler(credentialMetrics: GatewayMetrics) {
+export async function dispatchWalletHandlerV1(
+  credentialMetrics: GatewayMetrics
+) {
   await CredentialQueueWorker.waitUntilReady();
   await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
 
   // Volume PDA
-  const volumeTier = computeTier("volume", credentialMetrics.totalVolume);
-  let volumePoints = 0;
-  let volumeJob = undefined;
-  if (volumeTier != undefined) {
-    console.log(
-      `[wallet ${credentialMetrics.wallet}::month ${credentialMetrics.month}] volumeTier: ${volumeTier}`
-    );
-    volumePoints = computePoints("volume", volumeTier);
-
-    volumeJob = {
-      name: `${credentialMetrics.wallet}-${credentialMetrics.month}-volume`,
-      queueName: "issue-credential",
-      data: {
-        recipient: credentialMetrics.wallet,
-        title: `${METRICS_TRANSLATED["volume"]} - ${
-          MONTHS_TRANSLATED[credentialMetrics.month]
-        }`,
-        description: DESCRIPTION_TRANSLATED["volume"],
-        claim: {
-          volume: Number(credentialMetrics.totalVolume).toLocaleString(
-            "en-US",
-            {
-              style: "currency",
-              currency: "USD",
-            }
-          ),
-          tier: formatTier(volumeTier),
-          points: volumePoints,
-        },
-        image: TIER_DATA["volume"].images[volumeTier],
-        dataModelId: TIER_DATA["volume"].data_model,
-        points: volumePoints,
-        tags: ["DeFi", "Bridging"],
-      },
-      opts: {
-        jobId: `issue-volume-${credentialMetrics.month}-${credentialMetrics.wallet}`,
-      },
-    };
-  }
+  let volumeJob = getJob(MonthlyPDA.VOLUME, credentialMetrics);
 
   // Network PDA
-  const networkTier = computeTier(
-    "networks",
-    credentialMetrics.totalUniqueNetworks
-  );
-  let networkPoints = 0;
-  let networkJob = undefined;
-  if (networkTier != undefined) {
-    console.log(
-      `[wallet ${credentialMetrics.wallet}::month ${credentialMetrics.month}] networkTier: ${networkTier}`
-    );
-    networkPoints = computePoints("networks", networkTier);
-
-    networkJob = {
-      name: `${credentialMetrics.wallet}-${credentialMetrics.month}-network`,
-      queueName: "issue-credential",
-      data: {
-        recipient: credentialMetrics.wallet,
-        title: `${METRICS_TRANSLATED["networks"]} - ${
-          MONTHS_TRANSLATED[credentialMetrics.month]
-        }`,
-        description: DESCRIPTION_TRANSLATED["networks"],
-        claim: {
-          chains: credentialMetrics.totalUniqueNetworks,
-          tier: formatTier(networkTier),
-          points: networkPoints,
-        },
-        image: TIER_DATA["networks"].images[networkTier],
-        dataModelId: TIER_DATA["networks"].data_model,
-        points: networkPoints,
-        tags: ["DeFi", "Bridging"],
-      },
-      opts: {
-        jobId: `issue-network-${credentialMetrics.month}-${credentialMetrics.wallet}`,
-      },
-    };
-  }
+  let networkJob = getJob(MonthlyPDA.NETWORKS, credentialMetrics);
 
   // Transaction PDA
-  const transactionsTier = computeTier(
-    "transactions",
-    credentialMetrics.totalTransactions
-  );
-  let transactionsPoints = 0;
-  let transactionsJob = undefined;
-  if (transactionsTier != undefined) {
-    console.log(
-      `[wallet ${credentialMetrics.wallet}::month ${credentialMetrics.month}] transactionsTier: ${transactionsTier}`
-    );
-    transactionsPoints = computePoints("transactions", transactionsTier);
-
-    transactionsJob = {
-      name: `${credentialMetrics.wallet}-${credentialMetrics.month}-txn`,
-      queueName: "issue-credential",
-      data: {
-        recipient: credentialMetrics.wallet,
-        title: `${METRICS_TRANSLATED["transactions"]} - ${
-          MONTHS_TRANSLATED[credentialMetrics.month]
-        }`,
-        description: DESCRIPTION_TRANSLATED["transactions"],
-        claim: {
-          transactions: credentialMetrics.totalTransactions,
-          tier: formatTier(transactionsTier),
-          points: transactionsPoints,
-        },
-        image: TIER_DATA["transactions"].images[transactionsTier],
-        dataModelId: TIER_DATA["transactions"].data_model,
-        points: transactionsPoints,
-        tags: ["DeFi", "Bridging"],
-      },
-      opts: {
-        jobId: `issue-txn-${credentialMetrics.month}-${credentialMetrics.wallet}`,
-      },
-    };
-  }
+  let transactionsJob = getJob(MonthlyPDA.TRANSACTIONS, credentialMetrics);
 
   UpdateLoyaltyPassFlowProducer.add({
     name: `${credentialMetrics.wallet}`,
@@ -170,6 +63,104 @@ export async function dispatchWalletHandler(credentialMetrics: GatewayMetrics) {
   });
 }
 
+export async function dispatchWalletHandler(credentialMetrics: GatewayMetrics) {
+  await CredentialQueueWorker.waitUntilReady();
+  await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
+
+  // Bridge PDA
+  let bridgeJob = getJob(MonthlyPDA.BRIDGE, credentialMetrics);
+
+  // Transaction PDA
+  let transactionsJob = getJob(MonthlyPDA.TRANSACT, credentialMetrics);
+
+  // Chain PDA
+  let chainJob = getJob(MonthlyPDA.CHAIN, credentialMetrics);
+
+  // Swap PDA
+  let swapJob = getJob(MonthlyPDA.SWAP, credentialMetrics);
+
+  UpdateLoyaltyPassFlowProducer.add({
+    name: `${credentialMetrics.wallet}`,
+    queueName: "loyalty-pass",
+    data: {
+      wallet: credentialMetrics.wallet,
+    },
+    children: [bridgeJob, transactionsJob, chainJob, swapJob].filter(
+      (job) => job != undefined
+    ),
+    opts: {
+      jobId: `loyaltypass-${credentialMetrics.wallet}`,
+      attempts: parseInt(process.env.BULLMQ_RETRY) || 5,
+      backoff: {
+        type: "exponential",
+        delay: parseInt(process.env.BULLMQ_BACKOFF) || 500,
+      },
+    },
+  });
+}
+
+function getJob(metric: MonthlyPDA, data: GatewayMetrics) {
+  const value = {
+    [MonthlyPDA.VOLUME]: ["volume", data.totalVolume],
+    [MonthlyPDA.TRANSACTIONS]: ["transactions", data.totalTransactions],
+    [MonthlyPDA.NETWORKS]: ["chains", data.totalUniqueNetworks],
+
+    [MonthlyPDA.BRIDGE]: ["volume", (data as GatewayMetrics).totalBridge],
+    [MonthlyPDA.SWAP]: ["volume", (data as GatewayMetrics).totalVolume],
+    [MonthlyPDA.CHAIN]: [
+      "chains",
+      (data as GatewayMetrics).totalUniqueNetworks,
+    ],
+    [MonthlyPDA.TRANSACT]: [
+      "transactions",
+      (data as GatewayMetrics).totalTransactions,
+    ],
+  }[metric];
+
+  const tier = computeTier(metric, value[1] as number);
+
+  let points = 0;
+  let job = undefined;
+
+  if (tier != undefined) {
+    console.log(`[wallet ${data.wallet}::month ${data.month}] tier: ${tier}`);
+    points = computePoints(metric, tier);
+
+    job = {
+      name: `${data.wallet}-${data.month}-${metric}`,
+      queueName: "issue-credential",
+      data: {
+        recipient: data.wallet,
+        title: `${TIER_DATA[metric].title} - ${MONTHS_TRANSLATED[data.month]}`,
+        description: TIER_DATA[metric].description,
+        claim: {
+          ...{
+            [value[0]]:
+              metric == MonthlyPDA.VOLUME ||
+              metric == MonthlyPDA.SWAP ||
+              metric == MonthlyPDA.BRIDGE
+                ? Number(value[1]).toLocaleString("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  })
+                : value[1],
+          },
+          tier: formatTier(tier),
+          points,
+        },
+        image: TIER_DATA[metric].image || TIER_DATA[metric].images[tier],
+        dataModelId: TIER_DATA[metric].data_model,
+        points,
+      },
+      opts: {
+        jobId: `issue-${metric}-${data.month}-${data.wallet}`,
+      },
+    };
+  }
+
+  return job;
+}
+
 /**
  * ONE-OFF CAMPAIGNS
  */
@@ -178,14 +169,20 @@ export async function dispatchLineaHandler(lineaMetrics: LineaMetrics) {
   await CredentialQueueWorker.waitUntilReady();
   await CreateOrUpdateLoyaltyPassWorker.waitUntilReady();
 
-  const volumeTier = computeLineaTier("volume", lineaMetrics.totalVolume);
-  let volumePoints = computeLineaPoints("volume", volumeTier);
+  const volumeTier = computeLineaTier(
+    MonthlyPDA.VOLUME,
+    lineaMetrics.totalVolume
+  );
+  let volumePoints = computeLineaPoints(MonthlyPDA.VOLUME, volumeTier);
 
   const transactionsTier = computeLineaTier(
-    "transactions",
+    MonthlyPDA.TRANSACTIONS,
     lineaMetrics.totalTransactions
   );
-  let transactionsPoints = computeLineaPoints("transactions", transactionsTier);
+  let transactionsPoints = computeLineaPoints(
+    MonthlyPDA.TRANSACTIONS,
+    transactionsTier
+  );
 
   const children = [
     {
@@ -258,7 +255,7 @@ export async function dispatchCampaignHandler(
           tier,
         },
         image: campaignData.image,
-        dataModelId: campaignData.dataModel,
+        dataModelId: campaignData.data_model,
         points: campaignMetrics.points,
         tags: ["DeFi", "Bridging"],
         campaign,
