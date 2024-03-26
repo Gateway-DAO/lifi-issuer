@@ -45,13 +45,22 @@ const CreateOrUpdateLoyaltyPassWorker = new Worker<LoyaltyPassQueueData>(
     const credsByDM = await gt.pda.getPDAs({
       filter: {
         dataModelIds: [
+          // V1
           TIER_DATA["volume"].data_model,
           TIER_DATA["transactions"].data_model,
           TIER_DATA["networks"].data_model,
-          CAMPAIGN_DATA.boostor.dataModel,
-          CAMPAIGN_DATA.og.dataModel,
-          CAMPAIGN_DATA.linea.dataModel,
-          CAMPAIGN_DATA.transferto.dataModel,
+
+          // V2
+          TIER_DATA["bridge"].data_model,
+          TIER_DATA["swap"].data_model,
+          TIER_DATA["chain"].data_model,
+          TIER_DATA["transact"].data_model,
+
+          // Campaigns
+          CAMPAIGN_DATA.boostor.data_model,
+          CAMPAIGN_DATA.og.data_model,
+          CAMPAIGN_DATA.linea.data_model,
+          CAMPAIGN_DATA.transferto.data_model,
         ],
         owner: {
           type: UserIdentifierType.USER_ID,

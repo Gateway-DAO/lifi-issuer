@@ -8,6 +8,7 @@ export type LifiWalletReport = {
   fromAddress: string;
   bucket: string;
   sumTransferUsd: number;
+  sumBridgeTransferUsd?: number;
   transfers: number;
   chainCount: number;
 };
@@ -36,6 +37,7 @@ export type GatewayMetrics = {
   totalTransactions: number;
   totalUniqueNetworks: number;
   totalVolume: number;
+  totalBridge?: number;
   month?: Month;
 };
 
@@ -50,6 +52,19 @@ export type CampaignMetrics = {
   wallet: string;
   points: number;
 };
+
+export enum MonthlyPDA {
+  // V1
+  NETWORKS = "networks",
+  VOLUME = "volume",
+  TRANSACTIONS = "transactions",
+
+  // V2
+  SWAP = "swap",
+  BRIDGE = "bridge",
+  CHAIN = "chain",
+  TRANSACT = "transact",
+}
 
 export enum Campaign {
   OG = "og",
@@ -79,6 +94,7 @@ export function parseLifiData(lifiData: LifiWalletReport): GatewayMetrics {
     month: new Date(lifiData.bucket.split("-")[1])
       .toLocaleString("en-US", { month: "short" })
       .toUpperCase() as Month,
+    totalBridge: lifiData?.sumBridgeTransferUsd,
     totalTransactions: lifiData.transfers,
     totalUniqueNetworks: lifiData.chainCount,
     totalVolume: lifiData.sumTransferUsd,
